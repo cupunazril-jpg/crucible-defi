@@ -7,6 +7,8 @@ import { Code2, Menu, X, Sun, Moon, ChevronDown, Globe } from 'lucide-react';
 import { cn } from '@/utils';
 import { useTheme } from '@/context/ThemeContext';
 import { useLang } from '@/context/LanguageContext';
+import { WalletConnectButton } from '@/components/wallet/WalletConnectButton';
+import { AddressScanner } from '@/components/wallet/AddressScanner';
 
 const ROUTE_TITLE_KEYS: Record<string, string> = {
   '/': 'overview.title',
@@ -19,6 +21,8 @@ const ROUTE_TITLE_KEYS: Record<string, string> = {
   '/strategy': 'strategy.title',
   '/liquidations': 'liquidations.title',
   '/watchlist': 'watchlist.title',
+  '/alerts': 'nav.alerts',
+  '/report': 'nav.report',
   '/about': 'about.title',
 };
 
@@ -33,6 +37,8 @@ const MOBILE_NAV_KEYS = [
   ['/strategy', 'nav.strategy'],
   ['/liquidations', 'nav.liquidations'],
   ['/watchlist', 'nav.watchlist'],
+  ['/alerts', 'nav.alerts'],
+  ['/report', 'nav.report'],
   ['/about', 'nav.methodology'],
 ] as const;
 
@@ -54,7 +60,6 @@ export function Header() {
     return () => clearInterval(id);
   }, []);
 
-  // Close lang dropdown on outside click
   useEffect(() => {
     if (!langOpen) return;
     const handler = () => setLangOpen(false);
@@ -66,7 +71,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--border)]/40 bg-[var(--bg-primary)]/85 backdrop-blur">
-      <div className="px-6 lg:px-10 h-14 flex items-center gap-4 max-w-[1480px] mx-auto w-full">
+      <div className="px-6 lg:px-10 h-14 flex items-center gap-3 max-w-[1480px] mx-auto w-full">
         <button
           onClick={() => setOpen((o) => !o)}
           className="lg:hidden btn btn-ghost h-9 w-9 p-0"
@@ -86,8 +91,11 @@ export function Header() {
         <div className="hidden md:flex items-center gap-3 mono text-[11px] text-[var(--text-secondary)]">
           <span className="pulse-dot" />
           <span>UTC {now}</span>
-          <span className="text-[var(--text-muted)]">·</span>
-          <span>{t('header.engines')}</span>
+        </div>
+
+        {/* Address Scanner - inline on desktop */}
+        <div className="hidden lg:block max-w-xs">
+          <AddressScanner />
         </div>
 
         {/* Language Dropdown */}
@@ -140,15 +148,23 @@ export function Header() {
           )}
         </button>
 
+        {/* Wallet Connect */}
+        <WalletConnectButton />
+
         <Link
           href="https://github.com/cupunazril-jpg/crucible"
           target="_blank"
           rel="noopener noreferrer"
-          className="btn btn-ghost h-9 px-3"
+          className="btn btn-ghost h-9 px-3 hidden sm:inline-flex"
         >
           <Code2 className="h-4 w-4" />
-          <span className="hidden sm:inline text-[12px]">Repo</span>
+          <span className="hidden md:inline text-[12px]">Repo</span>
         </Link>
+      </div>
+
+      {/* Address Scanner - mobile */}
+      <div className="lg:hidden px-4 py-2 border-t border-[var(--border)]/20">
+        <AddressScanner />
       </div>
 
       {open && (
@@ -180,10 +196,7 @@ export function Header() {
 }
 
 function routeFallback(pathname: string): string {
-  // Return a translation key for unknown routes
   const seg = pathname.replace(/^\//, '').split('/')[0];
   if (!seg) return 'overview.title';
-  const name = seg.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-  // For unknown routes, just return the capitalized name directly (no translation key)
-  return name;
+  return seg.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }

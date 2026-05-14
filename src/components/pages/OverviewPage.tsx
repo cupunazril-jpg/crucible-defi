@@ -13,12 +13,16 @@ import {
   Radar,
 } from 'lucide-react';
 import { Panel, PanelHeader, RiskChip, StatCard } from '@/components/ui';
+import { DataSourceBadge } from '@/components/ui/DataSourceBadge';
+import { WalletRiskSnapshot } from '@/components/wallet/WalletRiskSnapshot';
+import { RiskScoreBar } from '@/components/risk/RiskScoreBadge';
 import { LiquidationsOverTime } from '@/components/charts/LiquidationsOverTime';
 import { OracleSpread } from '@/components/charts/OracleSpread';
 import { assessHealth } from '@/modules/health-factor';
 import { SAMPLE_POSITIONS } from '@/modules/data-pipeline/positions';
 import { syntheticDivergence } from '@/modules/oracle';
 import { generateLiquidations } from '@/modules/data-pipeline/liquidations';
+import { computeRiskScore } from '@/lib/risk/risk-score';
 import { formatPercent, formatUsd } from '@/utils';
 import type { LiquidationEvent, OracleDivergence } from '@/types';
 
@@ -76,7 +80,6 @@ export function OverviewPage() {
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
-    // Prefer the API (gives live price-centred quotes) but fall back to local synth.
     let cancelled = false;
     (async () => {
       try {
@@ -96,15 +99,21 @@ export function OverviewPage() {
         }
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const liqWeekVolume = useMemo(() => {
     const cutoff = now - 7 * 86_400_000;
     return liquidations.filter((e) => e.timestamp >= cutoff).reduce((s, e) => s + e.debtRepaidUsd, 0);
   }, [liquidations, now]);
+
+  // Compute overall risk score
+  const riskResult = useMemo(() => {
+    return computeRiskScore({
+      snapshot: totals.weakest?.s,
+      divergences,
+    });
+  }, [totals.weakest, divergences]);
 
   return (
     <div className="space-y-6">
@@ -124,8 +133,13 @@ export function OverviewPage() {
               Crucible reconstructs the on-chain Health Factor formula for Aave V3, Compound V3,
               Morpho Blue, Spark, Maker and others — then runs Geometric Brownian Motion price
               paths, historical scenario shocks and rule-based recommendations against your
-              collateral mix. Everything runs in your browser. No wallet connect required.
+              collateral mix. Everything runs in your browser.
             </p>
+            <div className="flex items-center gap-2 mt-3">
+              <DataSourceBadge source="DEMO" />
+              <DataSourceBadge source="SYNTHETIC" />
+              <span className="text-[10px] text-[var(--text-muted)]">Demo positions · Synthetic oracle model</span>
+            </div>
           </div>
           <div className="flex gap-2 shrink-0">
             <Link href="/positions" className="btn btn-primary">
@@ -138,32 +152,24 @@ export function OverviewPage() {
         </div>
       </Panel>
 
+      {/* Wallet Risk Snapshot */}
+      <WalletRiskSnapshot />
+
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Tracked Collateral"
-          value={formatUsd(totals.collateral, { compact: true })}
-          hint={`across ${positions.length} demo positions`}
-        />
-        <StatCard
-          label="Outstanding Debt"
-          value={formatUsd(totals.debt, { compact: true })}
-          hint={`blended LTV ${formatPercent(totals.blendedLtv, 1)}`}
-          tone="warning"
-        />
-        <StatCard
-          label="At-Risk Positions"
-          value={`${totals.atRiskCount} / ${positions.length}`}
-          hint={`HF < 1.35 threshold`}
-          tone={totals.atRiskCount > 0 ? 'negative' : 'positive'}
-        />
-        <StatCard
-          label="7d Liquidations"
-          value={formatUsd(liqWeekVolume, { compact: true })}
-          hint={`${liquidations.length} events catalogued`}
-          tone="accent"
-        />
+        <StatCard label="Tracked Collateral" value={formatUsd(totals.collateral, { compact: true })} hint={`across ${positions.length} demo positions`} />
+        <StatCard label="Outstanding Debt" value={formatUsd(totals.debt, { compact: true })} hint={`blended LTV ${formatPercent(totals.blendedLtv, 1)}`} tone="warning" />
+        <StatCard label="At-Risk Positions" value={`${totals.atRiskCount} / ${positions.length}`} hint={`HF < 1.35 threshold`} tone={totals.atRiskCount > 0 ? 'negative' : 'positive'} />
+        <StatCard label="7d Liquidations" value={formatUsd(liqWeekVolume, { compact: true })} hint={`${liquidations.length} events catalogued`} tone="accent" />
       </div>
+
+      {/* Risk Score */}
+      <Panel>
+        <PanelHeader title="Portfolio Risk Overview" subtitle="Aggregated risk assessment across all demo positions." />
+        <div className="max-w-md">
+          <RiskScoreBar result={riskResult} />
+        </div>
+      </Panel>
 
       {/* Modules grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,25 +196,15 @@ export function OverviewPage() {
         <PanelHeader
           title="Demo positions"
           subtitle="Pre-loaded positions exercising each engine. Click any row to open the position detail."
-          right={
-            <Link href="/positions" className="btn btn-ghost h-8 text-[12px]">
-              All positions <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          }
+          right={<Link href="/positions" className="btn btn-ghost h-8 text-[12px]">All positions <ChevronRight className="h-3.5 w-3.5" /></Link>}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {snapshots.map(({ p, s }) => (
-            <Link
-              key={p.id}
-              href={`/positions/${p.id}`}
-              className="panel hover p-4 flex flex-col gap-2"
-            >
+            <Link key={p.id} href={`/positions/${p.id}`} className="panel hover p-4 flex flex-col gap-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[13px] font-medium truncate">{p.label}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mt-0.5">
-                    {p.protocol} · {p.chain}
-                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mt-0.5">{p.protocol} · {p.chain}</div>
                 </div>
                 <RiskChip tier={s.tier} />
               </div>
@@ -234,17 +230,11 @@ export function OverviewPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Panel>
-          <PanelHeader
-            title="Liquidation volume (14d)"
-            subtitle="Aggregate debt repaid across Aave, Compound, Morpho, Spark, Maker."
-          />
+          <PanelHeader title="Liquidation volume (14d)" subtitle="Aggregate debt repaid across Aave, Compound, Morpho, Spark, Maker." />
           <LiquidationsOverTime events={liquidations} />
         </Panel>
         <Panel>
-          <PanelHeader
-            title="Oracle spread snapshot"
-            subtitle="Maximum spread (bps) between Chainlink, Pyth, Uniswap V3 TWAP and CoinGecko."
-          />
+          <PanelHeader title="Oracle spread snapshot" subtitle="Maximum spread (bps) between Chainlink, Pyth, Uniswap V3 TWAP and CoinGecko." />
           <OracleSpread divergences={divergences} />
         </Panel>
       </div>
@@ -256,9 +246,7 @@ export function OverviewPage() {
             Crucible is an analytics-only tool. It does not hold custody, route trades or submit
             transactions. All numbers are derived from public on-chain risk parameters and free
             data sources. See the{' '}
-            <Link href="/about" className="text-[var(--accent)] hover:underline">
-              methodology page
-            </Link>{' '}
+            <Link href="/about" className="text-[var(--accent)] hover:underline">methodology page</Link>{' '}
             for formulas, assumptions, and known limitations.
           </div>
         </div>

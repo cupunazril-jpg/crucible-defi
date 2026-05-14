@@ -3,6 +3,7 @@ import './globals.css';
 import { AppShell } from '@/components/layout/AppShell';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { LangProvider } from '@/context/LanguageContext';
+import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: 'Crucible — DeFi Lending Risk & Liquidation Intelligence',
@@ -16,11 +17,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body className="min-h-screen bg-mesh text-[var(--text-primary)] antialiased">
-        <ThemeProvider>
-          <LangProvider>
-            <AppShell>{children}</AppShell>
-          </LangProvider>
-        </ThemeProvider>
+        <Providers>
+          <ThemeProvider>
+            <LangProvider>
+              <AppShell>{children}</AppShell>
+            </LangProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

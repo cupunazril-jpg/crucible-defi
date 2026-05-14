@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import {
   Activity,
   Beaker,
+  Bell,
+  FileText,
   Flame,
   GitCompareArrows,
   Home,
@@ -32,6 +34,8 @@ const NAV_KEYS = [
   { href: '/strategy', labelKey: 'nav.strategy', Icon: Workflow },
   { href: '/liquidations', labelKey: 'nav.liquidations', Icon: ListChecks },
   { href: '/watchlist', labelKey: 'nav.watchlist', Icon: Star },
+  { href: '/alerts', labelKey: 'nav.alerts', Icon: Bell },
+  { href: '/report', labelKey: 'nav.report', Icon: FileText },
   { href: '/about', labelKey: 'nav.methodology', Icon: Beaker },
 ];
 
@@ -90,7 +94,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </button>
 
       {/* Nav */}
-      <nav className={cn('flex-1 px-3 space-y-0.5', collapsed && 'px-2')}>
+      <nav className={cn('flex-1 px-3 space-y-0.5 overflow-y-auto', collapsed && 'px-2')}>
         {NAV_KEYS.map(({ href, labelKey, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname?.startsWith(href);
           return (
@@ -118,7 +122,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <div className="px-5 py-5 text-[10px] text-[var(--text-muted)] mono leading-relaxed">
           <div className="flex items-center gap-2 mb-2">
             <span className="pulse-dot" />
-            <span>oracle feeds live</span>
+            <span>simulation feeds active</span>
           </div>
           <div>v0.1.0 · gbm sims @ Δt=1d</div>
           <div>HF math is protocol-aware</div>

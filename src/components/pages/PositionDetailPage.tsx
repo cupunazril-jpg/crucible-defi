@@ -14,6 +14,9 @@ import {
   Td,
   Th,
 } from '@/components/ui';
+import { DataSourceBadge } from '@/components/ui/DataSourceBadge';
+import { RiskScoreBadge } from '@/components/risk/RiskScoreBadge';
+import { computeRiskScore } from '@/lib/risk/risk-score';
 import { HFGauge } from '@/components/charts/HFGauge';
 import { HealthCurve } from '@/components/charts/HealthCurve';
 import { PriceCone } from '@/components/charts/PriceCone';
@@ -98,6 +101,13 @@ function PositionDetailInner({ basePosition }: { basePosition: LendingPosition }
     ),
   );
   const [mcRunning, setMcRunning] = useState(false);
+
+  // Compute risk score for this position
+  const riskResult = useMemo(() => computeRiskScore({
+    snapshot: snap,
+    monteCarlo: mc,
+    stressResults: stress,
+  }), [snap, mc, stress]);
 
   const runFreshMC = async () => {
     setMcRunning(true);
