@@ -157,7 +157,7 @@ export function Header() {
         <WalletConnectButton />
 
         <Link
-          href="https://github.com/cupunazril-jpg/crucible"
+          href="https://github.com/cupunazril-jpg/crucible-defi"
           target="_blank"
           rel="noopener noreferrer"
           className="btn btn-ghost h-9 px-3 hidden sm:inline-flex"
