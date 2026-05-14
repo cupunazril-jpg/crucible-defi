@@ -3,41 +3,46 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Code2, Menu, X } from 'lucide-react';
+import { Code2, Menu, X, Sun, Moon, ChevronDown, Globe } from 'lucide-react';
 import { cn } from '@/utils';
+import { useTheme } from '@/context/ThemeContext';
+import { useLang } from '@/context/LanguageContext';
 
-const ROUTE_TITLES: Record<string, string> = {
-  '/': 'Overview',
-  '/positions': 'Positions',
-  '/portfolio': 'Portfolio',
-  '/simulator': 'Monte Carlo Liquidation Simulator',
-  '/stress': 'Stress Lab',
-  '/compare': 'Cross-Protocol Compare',
-  '/oracle': 'Oracle Divergence Monitor',
-  '/strategy': 'Strategy Recommender',
-  '/liquidations': 'Liquidation Feed',
-  '/watchlist': 'Watchlist',
-  '/about': 'Methodology & Formulas',
+const ROUTE_TITLE_KEYS: Record<string, string> = {
+  '/': 'overview.title',
+  '/positions': 'positions.title',
+  '/portfolio': 'portfolio.title',
+  '/simulator': 'simulator.title',
+  '/stress': 'stress.title',
+  '/compare': 'compare.title',
+  '/oracle': 'oracle.title',
+  '/strategy': 'strategy.title',
+  '/liquidations': 'liquidations.title',
+  '/watchlist': 'watchlist.title',
+  '/about': 'about.title',
 };
 
-const MOBILE_NAV = [
-  ['/', 'Overview'],
-  ['/positions', 'Positions'],
-  ['/portfolio', 'Portfolio'],
-  ['/simulator', 'Monte Carlo'],
-  ['/stress', 'Stress Lab'],
-  ['/compare', 'Compare'],
-  ['/oracle', 'Oracle'],
-  ['/strategy', 'Strategy'],
-  ['/liquidations', 'Liquidations'],
-  ['/watchlist', 'Watchlist'],
-  ['/about', 'Methodology'],
+const MOBILE_NAV_KEYS = [
+  ['/', 'nav.overview'],
+  ['/positions', 'nav.positions'],
+  ['/portfolio', 'nav.portfolio'],
+  ['/simulator', 'nav.simulator'],
+  ['/stress', 'nav.stress'],
+  ['/compare', 'nav.compare'],
+  ['/oracle', 'nav.oracle'],
+  ['/strategy', 'nav.strategy'],
+  ['/liquidations', 'nav.liquidations'],
+  ['/watchlist', 'nav.watchlist'],
+  ['/about', 'nav.methodology'],
 ] as const;
 
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState<string>('');
+  const [langOpen, setLangOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { lang, setLang, t, langs } = useLang();
 
   useEffect(() => {
     const update = () => {
@@ -49,7 +54,15 @@ export function Header() {
     return () => clearInterval(id);
   }, []);
 
-  const title = pathname && (ROUTE_TITLES[pathname] ?? routeFallback(pathname));
+  // Close lang dropdown on outside click
+  useEffect(() => {
+    if (!langOpen) return;
+    const handler = () => setLangOpen(false);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [langOpen]);
+
+  const titleKey = pathname && (ROUTE_TITLE_KEYS[pathname] ?? routeFallback(pathname));
 
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--border)]/40 bg-[var(--bg-primary)]/85 backdrop-blur">
@@ -66,7 +79,7 @@ export function Header() {
             Crucible
           </div>
           <div className="text-[15px] font-semibold tracking-tight truncate">
-            {title}
+            {t(titleKey)}
           </div>
         </div>
 
@@ -74,8 +87,58 @@ export function Header() {
           <span className="pulse-dot" />
           <span>UTC {now}</span>
           <span className="text-[var(--text-muted)]">·</span>
-          <span>engines: idle</span>
+          <span>{t('header.engines')}</span>
         </div>
+
+        {/* Language Dropdown */}
+        <div className="relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLangOpen((o) => !o);
+            }}
+            className="btn btn-ghost h-9 px-2.5 gap-1.5"
+            aria-label="Change language"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            <span className="text-[12px] uppercase">{lang}</span>
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+          {langOpen && (
+            <div className="absolute right-0 top-full mt-1 min-w-[140px] py-1 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] shadow-xl z-50">
+              {langs.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => {
+                    setLang(l.code);
+                    setLangOpen(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-2 px-3 py-1.5 text-[12px] hover:bg-white/[0.06] transition-colors',
+                    lang === l.code && 'text-[var(--accent)] bg-[var(--accent-dim)]',
+                  )}
+                >
+                  <span>{l.flag}</span>
+                  <span>{l.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="btn btn-ghost h-9 w-9 p-0"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </button>
 
         <Link
           href="https://github.com/cupunazril-jpg/crucible"
@@ -91,7 +154,7 @@ export function Header() {
       {open && (
         <div className="lg:hidden border-t border-[var(--border)]/40 bg-[var(--bg-secondary)]">
           <nav className="px-4 py-3 grid grid-cols-2 gap-2">
-            {MOBILE_NAV.map(([href, label]) => {
+            {MOBILE_NAV_KEYS.map(([href, labelKey]) => {
               const active = href === '/' ? pathname === '/' : pathname?.startsWith(href);
               return (
                 <Link
@@ -105,7 +168,7 @@ export function Header() {
                       : 'text-[var(--text-secondary)]',
                   )}
                 >
-                  {label}
+                  {t(labelKey)}
                 </Link>
               );
             })}
@@ -117,7 +180,10 @@ export function Header() {
 }
 
 function routeFallback(pathname: string): string {
+  // Return a translation key for unknown routes
   const seg = pathname.replace(/^\//, '').split('/')[0];
-  if (!seg) return 'Overview';
-  return seg.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  if (!seg) return 'overview.title';
+  const name = seg.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  // For unknown routes, just return the capitalized name directly (no translation key)
+  return name;
 }

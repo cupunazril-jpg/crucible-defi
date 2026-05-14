@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppShell } from '@/components/layout/AppShell';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { LangProvider } from '@/context/LanguageContext';
 
 export const metadata: Metadata = {
   title: 'Crucible — DeFi Lending Risk & Liquidation Intelligence',
@@ -14,7 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body className="min-h-screen bg-mesh text-[var(--text-primary)] antialiased">
-        <AppShell>{children}</AppShell>
+        <ThemeProvider>
+          <LangProvider>
+            <AppShell>{children}</AppShell>
+          </LangProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
