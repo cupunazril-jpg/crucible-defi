@@ -137,15 +137,20 @@ export function Header() {
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="btn btn-ghost h-9 w-9 p-0"
+          className={cn(
+            'flex items-center gap-1.5 h-8 px-2.5 rounded-full border transition-all duration-200 text-[11px] font-medium',
+            theme === 'dark'
+              ? 'border-[var(--border)] bg-[var(--bg-secondary)]/60 text-[var(--text-secondary)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]'
+              : 'border-[var(--amber)]/30 bg-[var(--amber-dim)] text-[var(--amber)] hover:border-[var(--amber)]/50',
+          )}
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
         >
           {theme === 'dark' ? (
-            <Sun className="h-4 w-4" />
+            <Moon className="h-3.5 w-3.5" />
           ) : (
-            <Moon className="h-4 w-4" />
+            <Sun className="h-3.5 w-3.5" />
           )}
+          <span className="hidden md:inline">{theme === 'dark' ? 'Dark' : 'Light'}</span>
         </button>
 
         {/* Wallet Connect */}
