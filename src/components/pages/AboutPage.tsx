@@ -114,7 +114,7 @@ export function AboutPage() {
                 Open simulator
               </Link>
               <a
-                href="https://github.com/cupunazril-jpg/crucible"
+                href="https://github.com/cupunazril-jpg/crucible-defi"
                 target="_blank"
                 rel="noreferrer"
                 className="btn"
